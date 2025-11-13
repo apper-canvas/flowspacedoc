@@ -24,8 +24,10 @@ export const useTasks = () => {
 const createTask = async (taskData) => {
     try {
       const newTask = await taskService.create(taskData);
-      setTasks(prev => [...prev, newTask]);
-      toast.success("Task created successfully!");
+      if (newTask) {
+        setTasks(prev => [...prev, newTask]);
+        toast.success("Task created successfully!");
+      }
       return newTask;
     } catch (err) {
       toast.error("Failed to create task");
