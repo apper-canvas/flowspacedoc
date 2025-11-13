@@ -45,8 +45,8 @@ const createTask = async (taskData) => {
     }
   };
 
-  const getSubtasks = (parentTaskId) => {
-    return tasks.filter(task => task.parentTaskId === parseInt(parentTaskId));
+const getSubtasks = (parentTaskId) => {
+    return tasks.filter(task => task.parentTaskId_c?.Id === parseInt(parentTaskId));
   };
 
 const getMainTasks = () => {

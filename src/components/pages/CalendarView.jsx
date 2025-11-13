@@ -269,7 +269,7 @@ const CalendarView = () => {
                     onStatusChange={updateTaskStatus}
                     onDelete={deleteTask}
                     onCreateSubtask={(taskId) => onEditTask(null, taskId)}
-                    subtasks={tasks.filter(t => t.parentTaskId === task.Id)}
+subtasks={tasks.filter(t => t.parentTaskId_c?.Id === task.Id)}
                     className="shadow-sm"
                   />
                 ))}

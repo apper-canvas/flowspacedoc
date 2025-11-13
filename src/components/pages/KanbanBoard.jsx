@@ -38,11 +38,11 @@ const { onEditTask, projects } = useOutletContext();
 
 const filteredTasks = useMemo(() => {
     // Get main tasks only for Kanban board
-    const mainTasks = getMainTasks();
-return mainTasks.filter(task => {
-      const matchesSearch = (task.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (task.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesProject = !filterProject || task.projectId === filterProject;
+const mainTasks = getMainTasks();
+    return mainTasks.filter(task => {
+      const matchesSearch = (task.title_c || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (task.description_c || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesProject = !filterProject || task.projectId_c?.Id === parseInt(filterProject);
       return matchesSearch && matchesProject;
     });
   }, [getMainTasks, searchQuery, filterProject]);
