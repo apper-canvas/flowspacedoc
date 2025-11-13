@@ -39,10 +39,10 @@ const ProjectModal = ({
   ];
 
   useEffect(() => {
-    if (project) {
+if (project) {
       setFormData({
-        name: project.name || "",
-        color: project.color || "#4F46E5"
+        name: project.name_c || "",
+        color: project.color_c || "#4F46E5"
       });
     } else {
       setFormData({

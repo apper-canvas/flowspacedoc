@@ -175,11 +175,11 @@ const TaskCard = ({
             {task.priority}
           </Badge>
           
-          {task.dueDate && (
+{task.dueDate_c && (
             <div className="flex items-center gap-1">
               <ApperIcon name="Calendar" size={12} className="text-slate-400" />
-              <span className={cn("text-xs", getDateStyle(task.dueDate))}>
-                {getDateDisplay(task.dueDate)}
+              <span className={cn("text-xs", getDateStyle(task.dueDate_c))}>
+                {getDateDisplay(task.dueDate_c)}
               </span>
             </div>
           )}

@@ -26,9 +26,9 @@ const ProjectSelector = ({
         {...props}
       >
         <option value="">{placeholder}</option>
-        {projects.map(project => (
+{projects.map(project => (
           <option key={project.Id} value={project.Id.toString()}>
-            {project.name}
+            {project.name_c}
           </option>
         ))}
       </Select>

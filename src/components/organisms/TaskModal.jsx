@@ -31,14 +31,14 @@ projectId: "",
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (task) {
+if (task) {
       setFormData({
-        title: task.title || "",
-        description: task.description || "",
-        projectId: task.projectId || "",
-        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
-        priority: task.priority || "medium",
-        status: task.status || "todo",
+        title: task.title_c || "",
+        description: task.description_c || "",
+        projectId: task.projectId_c?.Id?.toString() || "",
+        dueDate: task.dueDate_c ? new Date(task.dueDate_c).toISOString().split("T")[0] : "",
+        priority: task.priority_c || "medium",
+        status: task.status_c === "inProgress" ? "in-progress" : task.status_c || "todo",
         parentTaskId: parentTaskId || null
       });
     } else {

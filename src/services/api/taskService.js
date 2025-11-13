@@ -1,146 +1,521 @@
-import tasksData from "@/services/mockData/tasks.json";
-
-let tasks = [...tasksData];
-
-const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+import { getApperClient } from '@/services/apperClient';
+import { toast } from 'react-toastify';
 
 export const taskService = {
   async getAll() {
-    await delay();
-    return [...tasks];
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching tasks:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay();
-    const task = tasks.find(task => task.Id === parseInt(id));
-    return task ? { ...task } : null;
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return null;
+      }
+
+      const response = await apperClient.getRecordById('tasks_c', parseInt(id), {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return null;
+      }
+
+      return response.data || null;
+    } catch (error) {
+      console.error(`Error fetching task ${id}:`, error?.response?.data?.message || error);
+      return null;
+    }
   },
 
   async create(taskData) {
-    await delay();
-    const highestId = tasks.length > 0 ? Math.max(...tasks.map(t => t.Id)) : 0;
-    const newTask = {
-      Id: highestId + 1,
-      ...taskData,
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      attachments: [],
-      comments: []
-    };
-    tasks.push(newTask);
-    return { ...newTask };
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return null;
+      }
+
+      const params = {
+        records: [{
+          title_c: taskData.title || taskData.title_c,
+          ...(taskData.description && { description_c: taskData.description }),
+          ...(taskData.dueDate && { dueDate_c: taskData.dueDate }),
+          status_c: taskData.status === "in-progress" ? "inProgress" : taskData.status || "todo",
+          priority_c: taskData.priority || "medium",
+          ...(taskData.projectId && { projectId_c: parseInt(taskData.projectId) }),
+          ...(taskData.parentTaskId && { parentTaskId_c: parseInt(taskData.parentTaskId) })
+        }]
+      };
+
+      const response = await apperClient.createRecord('tasks_c', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to create ${failed.length} tasks:`, failed);
+          failed.forEach(record => {
+            record.errors?.forEach(error => toast.error(`${error.fieldLabel}: ${error}`));
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        return successful.length > 0 ? successful[0].data : null;
+      }
+    } catch (error) {
+      console.error('Error creating task:', error?.response?.data?.message || error);
+      return null;
+    }
   },
 
   async update(id, taskData) {
-    await delay();
-    const index = tasks.findIndex(task => task.Id === parseInt(id));
-    if (index !== -1) {
-      const updatedTask = {
-        ...tasks[index],
-        ...taskData,
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return null;
+      }
+
+      const updateData = {
         Id: parseInt(id)
       };
-      
-      // Handle completion timestamp
-      if (taskData.status === "done" && tasks[index].status !== "done") {
-        updatedTask.completedAt = new Date().toISOString();
-      } else if (taskData.status !== "done") {
-        updatedTask.completedAt = null;
+
+      if (taskData.title) updateData.title_c = taskData.title;
+      if (taskData.description !== undefined) updateData.description_c = taskData.description;
+      if (taskData.dueDate !== undefined) updateData.dueDate_c = taskData.dueDate;
+      if (taskData.status) {
+        updateData.status_c = taskData.status === "in-progress" ? "inProgress" : taskData.status;
+        // Handle completion timestamp
+        if (taskData.status === "done") {
+          updateData.completedAt_c = new Date().toISOString();
+        } else {
+          updateData.completedAt_c = null;
+        }
       }
-      
-      tasks[index] = updatedTask;
-      return { ...updatedTask };
+      if (taskData.priority) updateData.priority_c = taskData.priority;
+      if (taskData.projectId) updateData.projectId_c = parseInt(taskData.projectId);
+      if (taskData.parentTaskId) updateData.parentTaskId_c = parseInt(taskData.parentTaskId);
+
+      const params = {
+        records: [updateData]
+      };
+
+      const response = await apperClient.updateRecord('tasks_c', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+
+      if (response.results) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to update ${failed.length} tasks:`, failed);
+          failed.forEach(record => {
+            record.errors?.forEach(error => toast.error(`${error.fieldLabel}: ${error}`));
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        return successful.length > 0 ? successful[0].data : null;
+      }
+    } catch (error) {
+      console.error('Error updating task:', error?.response?.data?.message || error);
+      return null;
     }
-    return null;
   },
 
   async delete(id) {
-    await delay();
-    const index = tasks.findIndex(task => task.Id === parseInt(id));
-    if (index !== -1) {
-      const deletedTask = tasks[index];
-      tasks.splice(index, 1);
-      return { ...deletedTask };
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return false;
+      }
+
+      const params = { 
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await apperClient.deleteRecord('tasks_c', params);
+
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+
+      if (response.results) {
+        const successful = response.results.filter(r => r.success);
+        const failed = response.results.filter(r => !r.success);
+        
+        if (failed.length > 0) {
+          console.error(`Failed to delete ${failed.length} tasks:`, failed);
+          failed.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        return successful.length > 0;
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error?.response?.data?.message || error);
+      return false;
     }
-    return null;
   },
 
   async getByProject(projectId) {
-    await delay();
-    return tasks.filter(task => task.projectId === projectId.toString()).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        where: [{
+          "FieldName": "projectId_c",
+          "Operator": "EqualTo",
+          "Values": [parseInt(projectId)]
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching tasks by project:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async getByStatus(status) {
-    await delay();
-    return tasks.filter(task => task.status === status).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const dbStatus = status === "in-progress" ? "inProgress" : status;
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        where: [{
+          "FieldName": "status_c",
+          "Operator": "EqualTo",
+          "Values": [dbStatus]
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching tasks by status:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async getByDateRange(startDate, endDate) {
-    await delay();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return tasks.filter(task => {
-      const taskDate = new Date(task.dueDate);
-      return taskDate >= start && taskDate <= end;
-    }).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        whereGroups: [{
+          "operator": "AND",
+          "subGroups": [{
+            "conditions": [
+              {
+                "fieldName": "dueDate_c",
+                "operator": "GreaterThanOrEqualTo",
+                "values": [startDate]
+              },
+              {
+                "fieldName": "dueDate_c",
+                "operator": "LessThanOrEqualTo",
+                "values": [endDate]
+              }
+            ],
+            "operator": "AND"
+          }]
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching tasks by date range:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async search(query) {
-    await delay();
-    const searchTerm = query.toLowerCase();
-    return tasks.filter(task => 
-      task.title.toLowerCase().includes(searchTerm) ||
-      task.description.toLowerCase().includes(searchTerm)
-).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        whereGroups: [{
+          "operator": "OR",
+          "subGroups": [{
+            "conditions": [
+              {
+                "fieldName": "title_c",
+                "operator": "Contains",
+                "values": [query]
+              },
+              {
+                "fieldName": "description_c",
+                "operator": "Contains",
+                "values": [query]
+              }
+            ],
+            "operator": "OR"
+          }]
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error searching tasks:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   // Subtask operations
   async getSubtasks(parentTaskId) {
-    await delay();
-    return tasks.filter(task => task.parentTaskId === parseInt(parentTaskId)).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        where: [{
+          "FieldName": "parentTaskId_c",
+          "Operator": "EqualTo",
+          "Values": [parseInt(parentTaskId)]
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching subtasks:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async createSubtask(parentTaskId, subtaskData) {
-    await delay();
-    const highestId = tasks.length > 0 ? Math.max(...tasks.map(t => t.Id)) : 0;
-    const newSubtask = {
-      Id: highestId + 1,
+    return await this.create({
       ...subtaskData,
-      parentTaskId: parseInt(parentTaskId),
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      attachments: [],
-      comments: [],
-      subtasks: []
-    };
-    tasks.push(newSubtask);
-    return { ...newSubtask };
+      parentTaskId: parseInt(parentTaskId)
+    });
   },
 
   async getMainTasks() {
-    await delay();
-    return tasks.filter(task => !task.parentTaskId).map(task => ({ ...task }));
+    try {
+      const apperClient = getApperClient();
+      if (!apperClient) {
+        console.error('ApperClient not available');
+        return [];
+      }
+
+      const response = await apperClient.fetchRecords('tasks_c', {
+        fields: [
+          {"field": {"Name": "Id"}},
+          {"field": {"Name": "Name"}},
+          {"field": {"Name": "title_c"}},
+          {"field": {"Name": "description_c"}},
+          {"field": {"Name": "dueDate_c"}},
+          {"field": {"Name": "status_c"}},
+          {"field": {"Name": "priority_c"}},
+          {"field": {"Name": "projectId_c"}},
+          {"field": {"Name": "completedAt_c"}},
+          {"field": {"Name": "parentTaskId_c"}}
+        ],
+        where: [{
+          "FieldName": "parentTaskId_c",
+          "Operator": "DoesNotHaveValue",
+          "Values": []
+        }]
+      });
+
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching main tasks:', error?.response?.data?.message || error);
+      return [];
+    }
   },
 
   async updateSubtaskStatus(subtaskId, status) {
-    await delay();
-    return this.update(subtaskId, { status });
+    return await this.update(subtaskId, { status });
   },
 
   async deleteSubtask(subtaskId) {
-    await delay();
-    return this.delete(subtaskId);
+    return await this.delete(subtaskId);
   },
 
   async getTaskWithSubtasks(taskId) {
-    await delay();
-    const mainTask = await this.getById(taskId);
-    if (!mainTask) return null;
+    try {
+      const mainTask = await this.getById(taskId);
+      if (!mainTask) return null;
 
-    const subtasks = await this.getSubtasks(taskId);
-    return {
-      ...mainTask,
-      subtasks
-    };
+      const subtasks = await this.getSubtasks(taskId);
+      return {
+        ...mainTask,
+        subtasks
+      };
+    } catch (error) {
+      console.error('Error fetching task with subtasks:', error);
+      return null;
+    }
   }
 };

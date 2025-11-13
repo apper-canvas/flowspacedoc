@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { cn } from "@/utils/cn";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
+import { useAuth } from "@/layouts/Root";
 
 const Header = ({ onCreateTask, onCreateProject }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const { logout } = useAuth();
+  const { user, isAuthenticated } = useSelector(state => state.user);
 
   const navigationItems = [
     { label: "Dashboard", path: "/", icon: "LayoutDashboard" },
@@ -28,6 +32,11 @@ const Header = ({ onCreateTask, onCreateProject }) => {
     if (currentPath === "/kanban") return "Kanban Board";
     if (currentPath === "/calendar") return "Calendar";
     return "FlowSpace";
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowMobileMenu(false);
   };
 
   return (
@@ -74,8 +83,14 @@ const Header = ({ onCreateTask, onCreateProject }) => {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            {/* Quick Actions - Desktop */}
+            {/* User Info & Actions - Desktop */}
             <div className="hidden lg:flex items-center gap-2">
+              {isAuthenticated && user && (
+                <div className="flex items-center gap-3 text-sm text-slate-600 mr-2">
+                  <span>Welcome, {user.firstName || user.name || 'User'}</span>
+                </div>
+              )}
+              
               <Button
                 variant="secondary"
                 size="sm"
@@ -94,6 +109,18 @@ const Header = ({ onCreateTask, onCreateProject }) => {
                 <ApperIcon name="Plus" size={16} />
                 New Task
               </Button>
+
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <ApperIcon name="LogOut" size={16} />
+                  Logout
+                </Button>
+              )}
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -109,6 +136,12 @@ const Header = ({ onCreateTask, onCreateProject }) => {
         {/* Mobile Menu */}
         {showMobileMenu && (
           <div className="lg:hidden py-4 border-t border-slate-200">
+            {isAuthenticated && user && (
+              <div className="mb-4 px-3 py-2 text-sm text-slate-600 border-b border-slate-200">
+                Welcome, {user.firstName || user.name || 'User'}
+              </div>
+            )}
+            
             <nav className="space-y-2 mb-4">
               {navigationItems.map((item) => (
                 <button
@@ -154,6 +187,17 @@ const Header = ({ onCreateTask, onCreateProject }) => {
                 <ApperIcon name="Plus" size={16} />
                 New Task
               </Button>
+
+              {isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 mt-2"
+                >
+                  <ApperIcon name="LogOut" size={16} />
+                  Logout
+                </Button>
+              )}
             </div>
           </div>
         )}
