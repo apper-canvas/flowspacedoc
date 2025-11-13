@@ -42,21 +42,22 @@ const mainTasks = getMainTasks();
     return mainTasks.filter(task => {
       const matchesSearch = (task.title_c || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (task.description_c || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesProject = !filterProject || task.projectId_c?.Id === parseInt(filterProject);
+const matchesProject = !filterProject || task.projectId_c?.Id === parseInt(filterProject);
       return matchesSearch && matchesProject;
     });
   }, [getMainTasks, searchQuery, filterProject]);
 
-  const tasksByStatus = useMemo(() => {
+const tasksByStatus = useMemo(() => {
     const grouped = {};
     columns.forEach(column => {
-      grouped[column.id] = filteredTasks.filter(task => task.status === column.id);
+      const statusValue = column.id === "in-progress" ? "inProgress" : column.id;
+      grouped[column.id] = filteredTasks.filter(task => task.status_c === statusValue);
     });
     return grouped;
   }, [filteredTasks, columns]);
 
-  const getTaskProject = (task) => {
-    return projects.find(p => p.Id.toString() === task.projectId);
+const getTaskProject = (task) => {
+    return projects.find(p => p.Id === task.projectId_c?.Id);
   };
 
   const handleDragStart = (e, task) => {
@@ -81,7 +82,7 @@ const mainTasks = getMainTasks();
     e.preventDefault();
     setDragOverColumn(null);
     
-    if (draggedTask && draggedTask.status !== columnId) {
+if (draggedTask && draggedTask.status_c !== (columnId === "in-progress" ? "inProgress" : columnId)) {
       updateTaskStatus(draggedTask.Id, columnId);
     }
     
