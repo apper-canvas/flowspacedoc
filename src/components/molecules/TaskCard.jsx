@@ -1,9 +1,9 @@
 import React from "react";
-import { format, isToday, isTomorrow, isPast } from "date-fns";
+import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { cn } from "@/utils/cn";
 import ApperIcon from "@/components/ApperIcon";
-import Badge from "@/components/atoms/Badge";
 import Card from "@/components/atoms/Card";
+import Badge from "@/components/atoms/Badge";
 
 const TaskCard = ({ 
   task, 
@@ -85,22 +85,23 @@ const TaskCard = ({
             />
           </button>
           
-          <div className="flex-1 min-w-0">
+<div className="flex-1 min-w-0">
             <h4 className={cn(
               "font-semibold text-slate-900 mb-1 line-clamp-2 leading-tight",
-              task.status === "done" && "line-through text-slate-500"
+              task.status === "done" && "line-through"
             )}>
-              {task.title}
+              {task.title_c || task.title || 'Untitled Task'}
             </h4>
-            
-            {task.description && (
+
+            {(task.description_c || task.description) && (
               <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                {task.description}
+                {task.description_c || task.description}
               </p>
             )}
           </div>
         </div>
-<div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {!task.parentTaskId && (
             <button
               onClick={(e) => {
@@ -167,19 +168,19 @@ const TaskCard = ({
             <span className="text-xs font-medium text-slate-600">
               {project.name}
             </span>
-          )}
+)}
         </div>
-
+        
         <div className="flex items-center gap-2">
-          <Badge variant={getPriorityVariant(task.priority)} size="xs">
-            {task.priority}
+          <Badge variant={getPriorityVariant(task.priority_c || task.priority || 'medium')} size="xs">
+            {task.priority_c || task.priority || 'medium'}
           </Badge>
           
-{task.dueDate_c && (
+          {(task.dueDate_c || task.dueDate) && (
             <div className="flex items-center gap-1">
               <ApperIcon name="Calendar" size={12} className="text-slate-400" />
-              <span className={cn("text-xs", getDateStyle(task.dueDate_c))}>
-                {getDateDisplay(task.dueDate_c)}
+              <span className={cn("text-xs", getDateStyle(task.dueDate_c || task.dueDate))}>
+                {getDateDisplay(task.dueDate_c || task.dueDate)}
               </span>
             </div>
           )}
