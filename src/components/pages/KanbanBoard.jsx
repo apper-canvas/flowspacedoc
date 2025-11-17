@@ -83,13 +83,11 @@ const handleDrop = (e, columnId) => {
     setDragOverColumn(null);
     
     if (draggedTask) {
-      const newStatus = columnId === "in-progress" ? "in-progress" : columnId;
+      const newStatus = columnId === "in-progress" ? "inProgress" : columnId;
       if (draggedTask.status_c !== newStatus) {
         updateTaskStatus(draggedTask.Id, newStatus);
       }
     }
-    setDraggedTask(null);
-    
     setDraggedTask(null);
   };
 
@@ -203,30 +201,26 @@ const handleDrop = (e, columnId) => {
                       {column.id === "done" && "Completed tasks will appear here"}
                     </p>
                   </div>
-                ) : (
-                  columnTasks.map((task) => (
-                    <div
-                      key={task.Id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task)}
-                      onDragEnd={handleDragEnd}
-                    >
-<TaskCard
-                        task={task}
-                        project={getTaskProject(task)}
-                        onEdit={onEditTask}
-                        onStatusChange={updateTaskStatus}
-                        onDelete={deleteTask}
-                        onCreateSubtask={(taskId) => onEditTask(null, taskId)}
-                        subtasks={getSubtasks(task.Id)}
-                        isDragging={draggedTask?.Id === task.Id}
-                        className={cn(
-                          "transition-all duration-200",
-                          draggedTask?.Id === task.Id && "opacity-50 transform rotate-3 scale-105"
-                        )}
-                      />
-                    </div>
-                  ))
+) : (
+                   columnTasks.map((task) => (
+                     <TaskCard
+                       key={task.Id}
+                       task={task}
+                       project={getTaskProject(task)}
+                       onEdit={onEditTask}
+                       onStatusChange={updateTaskStatus}
+                       onDelete={deleteTask}
+                       onCreateSubtask={(taskId) => onEditTask(null, taskId)}
+                       subtasks={getSubtasks(task.Id)}
+                       isDragging={draggedTask?.Id === task.Id}
+                       onDragStart={handleDragStart}
+                       onDragEnd={handleDragEnd}
+                       className={cn(
+                         "transition-all duration-200",
+                         draggedTask?.Id === task.Id && "opacity-50 transform rotate-3 scale-105"
+                       )}
+                     />
+                   ))
                 )}
               </div>
             </div>

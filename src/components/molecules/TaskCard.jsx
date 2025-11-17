@@ -64,12 +64,13 @@ return (
       className={cn(
         "p-4 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-hover group",
         isDragging && "dragging",
-        task.status === "done" && "opacity-75",
+        task.status_c === "done" && "opacity-75",
         className
       )}
       onClick={() => onEdit?.(task)}
       draggable={!task.parentTaskId}
       onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
         if (!task.parentTaskId) {
           onDragStart?.(e, task);
         } else {
@@ -77,7 +78,7 @@ return (
         }
       }}
       onDragEnd={(e) => {
-        onDragEnd?.(e);
+        onDragEnd?.();
       }}
       {...props}
     >
@@ -88,13 +89,13 @@ return (
             onClick={handleStatusClick}
             className="mt-0.5 text-slate-400 hover:text-primary transition-colors"
           >
-            <ApperIcon 
-              name={getStatusIcon(task.status)} 
-              size={18} 
-              className={cn(
-                task.status === "done" && "text-green-500",
-                task.status === "in-progress" && "text-amber-500"
-              )}
+<ApperIcon 
+               name={getStatusIcon()}
+               size={16}
+               className={cn(
+                 task.status_c === "done" && "text-green-500",
+                 task.status_c === "inProgress" && "text-amber-500"
+               )}
             />
           </button>
           
