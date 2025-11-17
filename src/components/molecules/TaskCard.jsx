@@ -14,6 +14,8 @@ const TaskCard = ({
   onCreateSubtask,
   subtasks = [],
   isDragging = false,
+  onDragStart,
+  onDragEnd,
   className,
   ...props
 }) => {
@@ -57,15 +59,26 @@ const TaskCard = ({
     onStatusChange?.(task.Id, nextStatus);
   };
 
-  return (
+return (
     <Card
       className={cn(
-        "p-4 cursor-pointer transition-all duration-200 hover:shadow-hover group",
+        "p-4 cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-hover group",
         isDragging && "dragging",
         task.status === "done" && "opacity-75",
         className
       )}
       onClick={() => onEdit?.(task)}
+      draggable={!task.parentTaskId}
+      onDragStart={(e) => {
+        if (!task.parentTaskId) {
+          onDragStart?.(e, task);
+        } else {
+          e.preventDefault();
+        }
+      }}
+      onDragEnd={(e) => {
+        onDragEnd?.(e);
+      }}
       {...props}
     >
       {/* Header */}

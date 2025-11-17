@@ -78,13 +78,17 @@ const getTaskProject = (task) => {
     }
   };
 
-  const handleDrop = (e, columnId) => {
+const handleDrop = (e, columnId) => {
     e.preventDefault();
     setDragOverColumn(null);
     
-if (draggedTask && draggedTask.status_c !== (columnId === "in-progress" ? "inProgress" : columnId)) {
-      updateTaskStatus(draggedTask.Id, columnId);
+    if (draggedTask) {
+      const newStatus = columnId === "in-progress" ? "in-progress" : columnId;
+      if (draggedTask.status_c !== newStatus) {
+        updateTaskStatus(draggedTask.Id, newStatus);
+      }
     }
+    setDraggedTask(null);
     
     setDraggedTask(null);
   };
